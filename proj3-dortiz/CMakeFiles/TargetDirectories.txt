@@ -1,0 +1,3 @@
+/home/student/dortiz/CS315/proj3-dortiz/CMakeFiles/proj3.dir
+/home/student/dortiz/CS315/proj3-dortiz/CMakeFiles/edit_cache.dir
+/home/student/dortiz/CS315/proj3-dortiz/CMakeFiles/rebuild_cache.dir

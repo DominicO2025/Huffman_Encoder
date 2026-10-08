@@ -1,0 +1,32 @@
+[
+{
+  "directory": "/home/student/dortiz/CS315/proj3-dortiz",
+  "command": "/usr/lib64/ccache/c++   -std=gnu++23 -Wall -Wextra -Wpedantic -Wconversion -Werror -o CMakeFiles/proj3.dir/src/main.cpp.o -c /home/student/dortiz/CS315/proj3-dortiz/src/main.cpp",
+  "file": "/home/student/dortiz/CS315/proj3-dortiz/src/main.cpp",
+  "output": "CMakeFiles/proj3.dir/src/main.cpp.o"
+},
+{
+  "directory": "/home/student/dortiz/CS315/proj3-dortiz",
+  "command": "/usr/lib64/ccache/c++   -std=gnu++23 -Wall -Wextra -Wpedantic -Wconversion -Werror -o CMakeFiles/proj3.dir/src/Scanner.cpp.o -c /home/student/dortiz/CS315/proj3-dortiz/src/Scanner.cpp",
+  "file": "/home/student/dortiz/CS315/proj3-dortiz/src/Scanner.cpp",
+  "output": "CMakeFiles/proj3.dir/src/Scanner.cpp.o"
+},
+{
+  "directory": "/home/student/dortiz/CS315/proj3-dortiz",
+  "command": "/usr/lib64/ccache/c++   -std=gnu++23 -Wall -Wextra -Wpedantic -Wconversion -Werror -o CMakeFiles/proj3.dir/src/utils.cpp.o -c /home/student/dortiz/CS315/proj3-dortiz/src/utils.cpp",
+  "file": "/home/student/dortiz/CS315/proj3-dortiz/src/utils.cpp",
+  "output": "CMakeFiles/proj3.dir/src/utils.cpp.o"
+},
+{
+  "directory": "/home/student/dortiz/CS315/proj3-dortiz",
+  "command": "/usr/lib64/ccache/c++   -std=gnu++23 -Wall -Wextra -Wpedantic -Wconversion -Werror -o CMakeFiles/proj3.dir/src/Huffman.cpp.o -c /home/student/dortiz/CS315/proj3-dortiz/src/Huffman.cpp",
+  "file": "/home/student/dortiz/CS315/proj3-dortiz/src/Huffman.cpp",
+  "output": "CMakeFiles/proj3.dir/src/Huffman.cpp.o"
+},
+{
+  "directory": "/home/student/dortiz/CS315/proj3-dortiz",
+  "command": "/usr/lib64/ccache/c++   -std=gnu++23 -Wall -Wextra -Wpedantic -Wconversion -Werror -o CMakeFiles/proj3.dir/src/BST.cpp.o -c /home/student/dortiz/CS315/proj3-dortiz/src/BST.cpp",
+  "file": "/home/student/dortiz/CS315/proj3-dortiz/src/BST.cpp",
+  "output": "CMakeFiles/proj3.dir/src/BST.cpp.o"
+}
+]
