@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Script by Ali Kooshesh, edited by Suzanne Rivoire
 # Compile, run on every input_output/*.txt, and diff outputs against a reference dir.
 
 set -Eeuo pipefail
