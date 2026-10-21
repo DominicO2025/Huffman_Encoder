@@ -1,84 +1,84 @@
-import { useState, type ChangeEvent, type DragEvent } from "react"; //imports react drag, change, and use state
+import { useRef, useState } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 
 type FileUploadProps = {
-    onFileSelect: (file: File) => void;
+  onFileSelect: (file: File) => void;
 };
 
-export default function FileUpload({ onFileSelect }: FileUploadProps) {
-    const [fileName, setFileName] = useState("");
+function FileUpload({ onFileSelect }: FileUploadProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    function handleFile(file: File) { //creates a edge case to check if file is valid
-        if(!file.name.toLowerCase().endsWith(".txt")) {
-            alert("Please upload a .txt file");
-            return; 
-        }
-
-        setFileName(file.name)
-        onFileSelect(file);
-
+  function handleFile(file: File) {
+    if (!file.name.toLowerCase().endsWith(".txt")) {
+      alert("Please upload a .txt file.");
+      return;
     }
 
-    function handleChange(event: ChangeEvent<HTMLInputElement>) {
-        const file = event.target.files?.[0];
+    onFileSelect(file);
+  }
 
-        if(file){
-            handleFile(file);
-        }
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      handleFile(file);
     }
+  }
 
-    function handleDrop(event: DragEvent<HTMLDivElement>){
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+
+    const file = event.dataTransfer.files[0];
+
+    if (file) {
+      handleFile(file);
+    }
+  }
+
+  return (
+    <div
+      onDragOver={(event) => {
         event.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+      className={`border-2 border-dashed rounded-xl p-10 text-center
+        ${
+          isDragging
+            ? "border-blue-500 bg-blue-950"
+            : "border-slate-500 bg-slate-800"
+        }`}
+    >
+      <div className="text-4xl mb-4">📁</div>
 
-        const file = event.dataTransfer.files[0]; 
+      <h2 className="text-xl font-semibold mb-2">
+        Drag and drop your file here
+      </h2>
 
-        if (file) {
-            handleFile(file);
-        }
-    }
+      <p className="text-gray-400 mb-5">
+        Or select a .txt file from your computer
+      </p>
 
-    return (
-        <div
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={handleDrop}
-            className="border-2 border-dashed border-gray-500
-                        rounded-lg p10 text-center bg-gray-800"
-        >
-            <h2 className="text-xl font-bold mb-4"> 
-                Upload Text Files
-            </h2>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt"
+        onChange={handleChange}
+        className="hidden"
+      />
 
-            <input
-                type="file"
-                accept=".txt"
-                onChange={handleChange}
-                className="mb-4"
-            />
-
-            <p className="text-grey-400">
-                Or drag and drop your file here
-            </p>
-
-            {fileName && (
-                <p className="mt-4 text-green-400">
-                    Selected: {fileName}
-                </p>
-            )}
-
-
-
-        </div>
-
-    )
-    
-
-
-
-
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="bg-slate-700 hover:bg-slate-600 px-5 py-2 rounded-lg"
+      >
+        Browse Files
+      </button>
+    </div>
+  );
 }
 
-
-
-
-    
-
-
+export default FileUpload;
