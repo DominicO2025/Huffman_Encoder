@@ -28,6 +28,17 @@ target_link_libraries(huffman_server
     PRIVATE huffman_core Crow::Crow
 )
 
+add_executable(test_byte_huffman
+    src/test_byte_huffman.cpp
+    src/ByteHuffman.cpp
+    src/HuffFile.cpp
+)
+
+add_executable(test_byte_decoder
+    src/test_byte_decoder.cpp
+    src/ByteDecoder.cpp
+)
+
 # Compiler warnings
 foreach(target proj3 huffman_server)
     target_compile_options(${target} PRIVATE

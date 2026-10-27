@@ -5,29 +5,59 @@ function App() {
     const [selectedFile, setSelectedFile] =
     useState<File | null>(null);
 
+    const [isEncoding, setIsEncoding] = useState(false);
+
     async function handleEncode() {
-        if (!selectedFile) {
-            return;
-        }
+        if (!selectedFile) return;
 
-        const fileContent = await selectedFile.text();
+        setIsEncoding(true);
 
-        const response = await fetch("/api/encode", {
+        try {
+            // 1. Send the uploaded file to Crow
+            const response = await fetch("/api/encode", {
             method: "POST",
             headers: {
                 "Content-Type": "text/plain",
             },
-            body: fileContent,
-        });
+            body: selectedFile,
+            });
 
-        if (!response.ok) {
-            throw new Error("Encoding request failed");
+            if (!response.ok) {
+            const message = await response.text();
+            throw new Error(message || "Encoding failed");
+            }
+
+            // 2. Convert the response into a Blob
+            const encodedBlob = await response.blob();
+
+            // 3. Create a temporary download URL
+            const url = URL.createObjectURL(encodedBlob);
+
+            // 4. Create a temporary download link
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = selectedFile.name.replace(/\.txt$/i, ".code");
+
+            // 5. Trigger the download
+            document.body.appendChild(link);
+            link.click();
+
+            // 6. Clean up
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+        } catch (error) {
+            console.error("Encoding error:", error);
+
+            if (error instanceof Error) {
+            alert(error.message);
+            }
+
+        } finally {
+            setIsEncoding(false);
         }
-
-        const result = await response.text();
-
-        console.log(result);
-}
+        }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
@@ -54,13 +84,13 @@ function App() {
         )}
 
         <div className="flex gap-4 mt-6">
-          <button
-            onClick={handleEncode}
-            disabled={!selectedFile}
-            className="bg-blue-600 p-3 rounded-lg"
-            >
-            Encode
-        </button>
+            <button
+                onClick={handleEncode}
+                disabled={!selectedFile || isEncoding}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg"
+                >
+                {isEncoding ? "Encoding..." : "Encode"}
+            </button>
 
           <button
             disabled={!selectedFile}
@@ -68,6 +98,7 @@ function App() {
           >
             Decode
           </button>
+
         </div>
 
       </div>

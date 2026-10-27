@@ -25,18 +25,21 @@ bool customComparison(
     return a.second > b.second;
 }
 
-void encodeFile(const std::string& inputPrefix) {
+bool encodeFile(const std::string& inputPrefix) {
 
     const std::string inputFileName = inputPrefix + ".txt";
     const std::string wordTokensFileName = inputPrefix + ".tokens";
 
-    if (error_type status;
-        (status = regularFileExistsAndIsAvailable(inputFileName)) != NO_ERROR)
-        exitOnError(status, inputFileName);
+    if (regularFileExistsAndIsAvailable(inputFileName) != NO_ERROR) {
+        std::cerr << "ERROR: Cannot find or open input file: "
+                << inputFileName << std::endl;
+        return false;
+    }
 
-    if (error_type status;
-        (status = canOpenForWriting(wordTokensFileName)) != NO_ERROR)
-        exitOnError(status, wordTokensFileName);
+    if (canOpenForWriting(wordTokensFileName) != NO_ERROR) {
+        std::cerr << "ERROR: Cannot write tokens file" << std::endl;
+        return false;
+    }
 
     std::vector<std::string> words;
 
@@ -44,13 +47,20 @@ void encodeFile(const std::string& inputPrefix) {
 
     auto fileToWords = Scanner(inputFileName);
 
-    if (error_type status;
-        (status = fileToWords.tokenize(words)) != NO_ERROR)
-        exitOnError(status, inputFileName);
+    if (fileToWords.tokenize(words) != NO_ERROR) {
+        std::cerr << "ERROR: Scanner failed" << std::endl;
+        return false;
+    }
 
-    if (error_type status;
-        (status = writeVectorToFile(wordTokensFileName, words)) != NO_ERROR)
-        exitOnError(status, wordTokensFileName);
+    if (writeVectorToFile(wordTokensFileName, words) != NO_ERROR) {
+        std::cerr << "ERROR: Failed to write tokens" << std::endl;
+        return false;
+    }
+    
+    if (words.empty()) {
+        std::cerr << "ERROR: No valid words found" << std::endl;
+        return false;
+    }
 
     std::vector<std::string> originalWords = words;
 
@@ -93,4 +103,6 @@ void encodeFile(const std::string& inputPrefix) {
 
     htree.encode(originalWords, codeOut);
     codeOut.close();
+
+    return true;    
 }

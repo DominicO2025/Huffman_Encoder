@@ -2,4 +2,4 @@
 
 #include <string>
 
-void encodeFile(const std::string& inputPrefix);
+bool encodeFile(const std::string& inputPrefix);
