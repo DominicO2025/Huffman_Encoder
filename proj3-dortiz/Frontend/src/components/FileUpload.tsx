@@ -10,9 +10,14 @@ function FileUpload({ onFileSelect }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
-    if (!file.name.toLowerCase().endsWith(".txt")) {
-      alert("Please upload a .txt file.");
-      return;
+    const fileName = file.name.toLowerCase();
+
+    if (
+        !fileName.endsWith(".txt") &&
+        !fileName.endsWith(".huff")
+    ) {
+        alert("Please upload a .txt or .huff file.");
+        return;
     }
 
     onFileSelect(file);
@@ -48,8 +53,8 @@ function FileUpload({ onFileSelect }: FileUploadProps) {
       className={`border-2 border-dashed rounded-xl p-10 text-center
         ${
           isDragging
-            ? "border-blue-500 bg-blue-950"
-            : "border-slate-500 bg-slate-800"
+            ? "border-blue-500 bg-black"
+            : "border-slate-500 bg-black"
         }`}
     >
       <div className="text-4xl mb-4">📁</div>

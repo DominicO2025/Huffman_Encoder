@@ -1,107 +1,157 @@
 #include "crow.h"
-#include "Encoder.hpp"
+#include "ByteHuffman.hpp"
+#include "ByteDecoder.hpp"
 
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <iterator>
-#include <chrono>
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <system_error>
+#include <memory>
+#include <stdexcept>
 
 namespace fs = std::filesystem;
+
+// Create a temporary workspace for each request
+struct TempWorkspace {
+    fs::path directory;
+
+    TempWorkspace() {
+        static std::atomic<std::uint64_t> counter{0};
+
+        for (int attempt = 0; attempt < 10; ++attempt) {
+            auto id = std::to_string(
+                std::chrono::steady_clock::now()
+                    .time_since_epoch().count()
+            ) + "_" + std::to_string(counter++);
+
+            directory = fs::temp_directory_path() /
+                        ("huffman_" + id);
+
+            std::error_code ec;
+            if (fs::create_directory(directory, ec)) {
+                return;
+            }
+        }
+
+        throw std::runtime_error("Cannot create temporary workspace");
+    }
+
+    ~TempWorkspace() {
+        std::error_code ec;
+        fs::remove_all(directory, ec);
+    }
+};
+
+// Write the uploaded file
+bool saveFile(const fs::path& path, const std::string& data) {
+    std::ofstream output(path, std::ios::binary);
+
+    if (!output) return false;
+
+    output.write(data.data(),
+                 static_cast<std::streamsize>(data.size()));
+
+    output.close();
+    return output.good();
+}
+
+// Read the generated file
+bool readFile(const fs::path& path, std::string& data) {
+    std::ifstream input(path, std::ios::binary);
+
+    if (!input) return false;
+
+    data.assign(
+        std::istreambuf_iterator<char>(input),
+        std::istreambuf_iterator<char>()
+    );
+
+    return !input.bad();
+}
 
 int main() {
     crow::SimpleApp app;
 
+    // ENCODE
     CROW_ROUTE(app, "/api/encode")
     .methods(crow::HTTPMethod::POST)
     ([](const crow::request& req) {
+        try {
+            if (req.body.size() > 10 * 1024 * 1024) {
+                return crow::response(413, "File too large");
+            }
 
-        // 1. Validate uploaded content
-        if (req.body.empty()) {
-            return crow::response(400, "File is empty");
+            TempWorkspace workspace;
+
+            fs::path inputPath = workspace.directory / "upload.txt";
+            fs::path outputPath = workspace.directory / "upload.txt.huff";
+
+            if (!saveFile(inputPath, req.body)) {
+                return crow::response(500, "Failed to save upload");
+            }
+
+            if (!encodeBytes(inputPath.string())) {
+                return crow::response(500, "Encoding failed");
+            }
+
+            std::string result;
+            if (!readFile(outputPath, result)) {
+                return crow::response(500, "Failed to read compressed file");
+            }
+
+            crow::response response(200, result);
+            response.set_header(
+                "Content-Type", "application/octet-stream"
+            );
+            return response;
+
+        } catch (const std::exception&) {
+            return crow::response(500, "Internal server error");
         }
+    });
 
-        if (req.body.size() > 5 * 1024 * 1024) {
-            return crow::response(413, "File is too large");
+    // DECODE
+    CROW_ROUTE(app, "/api/decode")
+    .methods(crow::HTTPMethod::POST)
+    ([](const crow::request& req) {
+        try {
+            if (req.body.size() > 10 * 1024 * 1024) {
+                return crow::response(413, "File too large");
+            }
+
+            TempWorkspace workspace;
+
+            fs::path inputPath = workspace.directory / "upload.huff";
+            fs::path outputPath = workspace.directory / "restored.txt";
+
+            if (!saveFile(inputPath, req.body)) {
+                return crow::response(500, "Failed to save upload");
+            }
+
+            if (!decodeBytes(
+                    inputPath.string(),
+                    outputPath.string())) {
+                return crow::response(400, "Invalid Huffman file");
+            }
+
+            std::string result;
+            if (!readFile(outputPath, result)) {
+                return crow::response(500, "Failed to read decoded file");
+            }
+
+            crow::response response(200, result);
+            response.set_header(
+                "Content-Type", "application/octet-stream"
+            );
+            return response;
+
+        } catch (const std::exception&) {
+            return crow::response(500, "Internal server error");
         }
-
-        // 2. Create a unique temporary directory
-        static std::atomic<std::uint64_t> counter{0};
-
-        auto id = std::to_string(
-            std::chrono::steady_clock::now()
-                .time_since_epoch().count()
-        ) + "_" + std::to_string(counter++);
-
-        fs::path tempDir =
-            fs::temp_directory_path() / ("huffman_" + id);
-
-        std::error_code ec;
-
-        if (!fs::create_directory(tempDir, ec)) {
-            return crow::response(500, "Cannot create temporary directory");
-        }
-
-        // 3. Save the uploaded text
-        fs::path prefix = tempDir / "upload";
-        fs::path inputPath = tempDir / "upload.txt";
-
-        std::ofstream input(inputPath, std::ios::binary);
-
-        if (!input) {
-            fs::remove_all(tempDir, ec);
-            return crow::response(500, "Cannot create input file");
-        }
-
-        input.write(req.body.data(),
-                    static_cast<std::streamsize>(req.body.size()));
-        input.close();
-
-        if (!input) {
-            fs::remove_all(tempDir, ec);
-            return crow::response(500, "Cannot write input file");
-        }
-
-        // 4. Run the Huffman encoder
-        bool success = encodeFile(prefix.string());
-
-        if (!success) {
-            fs::remove_all(tempDir, ec);
-            return crow::response(500, "Encoding failed");
-        }
-
-        // 5. Read the encoded output
-        fs::path outputPath = tempDir / "upload.code";
-
-        std::ifstream output(outputPath, std::ios::binary);
-
-        if (!output) {
-            fs::remove_all(tempDir, ec);
-            return crow::response(500, "Cannot read encoded file");
-        }
-
-        std::string encoded(
-            (std::istreambuf_iterator<char>(output)),
-            std::istreambuf_iterator<char>()
-        );
-
-        if (output.bad()) {
-            fs::remove_all(tempDir, ec);
-            return crow::response(500, "Cannot read encoded file");
-        }
-
-        output.close();
-
-        // 6. Remove temporary files
-        fs::remove_all(tempDir, ec);
-
-        // 7. Return encoded data to React
-        crow::response response(200, encoded);
-        response.set_header("Content-Type", "text/plain");
-        return response;
     });
 
     app.port(8080).run();
