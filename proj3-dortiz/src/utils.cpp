@@ -6,6 +6,7 @@
 #include <fstream>
 #include <vector>
 #include "utils.hpp"
+#include <iostream>
 
 
 void exitOnError(error_type error, const std::string &entityName = "") {
