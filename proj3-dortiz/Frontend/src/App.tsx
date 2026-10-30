@@ -3,6 +3,7 @@ import FileUpload from "./components/FileUpload";
 import FileSidebar from "./components/FileSidebar";
 import UploadedFilesSidebar from "./components/UploadedFilesSidebar";
 import ProcessedFileSidebar from "./components/ProcessedFileSidebar";
+import "./index.css"
 
 type ProcessedFile = {
   blob: Blob;
