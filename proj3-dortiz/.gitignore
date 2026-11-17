@@ -1,1 +1,4 @@
-build/*
+# Local dependency and build output created by the helper scripts.
+.deps/
+build-vcpkg/
+Frontend/node_modules/
