@@ -36,6 +36,8 @@ function FileSidebar({
   onSampleUse,
 }: FileSidebarProps) {
   function createSampleFile(fileName: string, contents: string) {
+    // Vite imports the checked-in samples as strings; wrap one in File so it
+    // follows the same path as a file selected from the user's computer.
     return new File([contents], fileName, { type: "text/plain" });
   }
 

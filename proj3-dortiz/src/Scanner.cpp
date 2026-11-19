@@ -25,12 +25,14 @@ std::string Scanner::readWord(std::istream& in) {
     while (in.get(character)) {
         unsigned char currChar = static_cast<unsigned char>(character);
 
+        // Non-ASCII bytes are separators in the legacy assignment format.
         if (currChar > 127) {
             if (inToken) return token;
             continue;
         }
 
     
+        // Normalize letters so "The" and "the" share a frequency count.
         if (std::isalpha(currChar)) {
             token += static_cast<char>(std::tolower(currChar));
             inToken = true;

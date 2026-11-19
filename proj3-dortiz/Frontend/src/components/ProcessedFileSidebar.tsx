@@ -9,6 +9,7 @@ type ProcessedFileSidebarProps = {
 };
 
 function formatFileSize(sizeInBytes: number) {
+  // Keep the result compact because this value is shown beside the filename.
   if (sizeInBytes < 1024) return `${sizeInBytes} B`;
 
   return `${(sizeInBytes / 1024).toFixed(2)} KB`;

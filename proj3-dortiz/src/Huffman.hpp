@@ -20,17 +20,16 @@
 class HuffmanTree {
   public:
 
-    // Build from BST output (lexicographic vector of (word, count)).
+    /// Builds a tree from `(word, frequency)` pairs.
     HuffmanTree(const std::vector<std::pair<std::string,int>>& counts);
     HuffmanTree() = default;
     ~HuffmanTree(); // deletes the entire Huffman tree
 
-    // Header writer (pre-order over leaves; "word<space>code"; newline at end).
+    /// Writes one `word code` entry for each leaf.
     error_type writeHeader(std::ostream& os) const;
 
     
-    // Encode a sequence of tokens using the codebook derived from this tree.
-    // Writes ASCII '0'/'1' and wraps lines to wrap_cols (80 by default).
+    /// Writes ASCII `0`/`1` codes for the tokens, wrapping long lines.
     error_type encode(const std::vector<std::string>& tokens, std::ostream& os_bits,
         int wrap_cols = 80) const;
 

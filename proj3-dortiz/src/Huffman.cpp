@@ -15,6 +15,7 @@ using namespace std;
     // Build from BST output (lexicographic vector of (word, count)).
     HuffmanTree::HuffmanTree(const std::vector<std::pair<std::string,int>>& counts){
 
+        // Start with one leaf per word and use a min-heap to build the tree.
         std::priority_queue<TreeNode*, vector<TreeNode*>, CustomHeapComp> pq;
         
         for(size_t i = 0; i < counts.size(); ++i){
@@ -26,6 +27,8 @@ using namespace std;
         }
 
         while(pq.size() > 1){
+            // The two least-frequent nodes become siblings. Their order is
+            // determined by CustomHeapComp and therefore reproducible.
             TreeNode* a = pq.top();
             pq.pop(); 
 
@@ -68,6 +71,7 @@ using namespace std;
         }
 
         if (node->left == nullptr && node->right == nullptr) {
+            // Store only leaves: the path is enough to reconstruct each code.
             std::string code = prefix.empty() ? "0" : prefix;
             os << node->word << " " << code << '\n';
             return;
@@ -90,6 +94,7 @@ using namespace std;
          int wrap_cols) const {
 
 
+        // Build a lookup table once, then encode the original token order.
         std::map<std::string, std::string> codes;
 
         std::function<void(const TreeNode*, std::string)> visit =

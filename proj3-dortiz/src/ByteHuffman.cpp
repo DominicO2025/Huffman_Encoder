@@ -13,6 +13,8 @@
 #include <bitset>
 
 struct ByteNode {
+    // `byte` is meaningful for leaves. Internal nodes use only the aggregate
+    // frequency and minByte needed by the priority-queue tie breaker.
     unsigned char byte;
     std::uint64_t frequency;
     std::uint16_t minByte;
@@ -25,6 +27,8 @@ struct ByteNode {
 };
 
 struct CompareNodes {
+    // priority_queue is a max-heap by default, so reverse comparisons make
+    // the smallest frequency (then smallest byte) appear at the top.
     bool operator()(const ByteNode* a, const ByteNode* b) const {
         if (a->frequency == b->frequency) {
             return a->minByte > b->minByte;
@@ -39,13 +43,14 @@ void generateCodes(const ByteNode* node, const std::string& currentCode, std::ar
         return;
     }
 
-    // Base case: We reached a leaf node
+    // A leaf's path from the root is its Huffman code. A single-symbol file
+    // has an empty path, so use "0" to give it a usable code.
     if (node->left == nullptr && node->right == nullptr) {
         codes[node->byte] = currentCode.empty() ? "0" : currentCode;
         return;
     }
 
-    // Traverse left (0)
+    // Traverse left (0) and right (1) to extend each path.
     generateCodes(node->left, currentCode + "0", codes);
 
     // Traverse right (1)
@@ -56,14 +61,15 @@ void generateCodes(const ByteNode* node, const std::string& currentCode, std::ar
 
 bool encodeBytes(const std::string& inputFileName) {
 
-    // Opens file
+    // Read as raw bytes; using text mode would make this platform-dependent.
     std::ifstream input(inputFileName, std::ios::binary);
 
     if (!input) {
         return false;
     }
 
-    // Reads every byte
+    // Keeping the complete input in memory makes the second encoding pass
+    // straightforward and keeps the implementation easy to inspect.
     std::vector<unsigned char> data{
         std::istreambuf_iterator<char>(input),
         std::istreambuf_iterator<char>()
@@ -73,7 +79,7 @@ bool encodeBytes(const std::string& inputFileName) {
         return false;
     }
 
-    // Counts byte frequencies
+    // The frequency table is stored in the .huff header for the decoder.
     std::array<std::uint64_t, 256> frequencies{};
 
     for (unsigned char byte : data) {
@@ -84,7 +90,7 @@ bool encodeBytes(const std::string& inputFileName) {
 
     std::vector<std::unique_ptr<ByteNode>> nodes;
 
-    // Creates leaf nodes for bytes in file
+    // Create one leaf for each byte that actually occurs.
     for (int i = 0; i < 256; i++) {
         if (frequencies[i] > 0) {
             auto node = std::make_unique<ByteNode>(
@@ -97,7 +103,9 @@ bool encodeBytes(const std::string& inputFileName) {
         }
     }
 
-    // Combine the two least frequent nodes
+    // Huffman construction: combine the two least-frequent subtrees until
+    // only the root remains. The deterministic tie breaker must match the
+    // decoder exactly.
     while (pq.size() > 1) {
         ByteNode* left = pq.top();
         pq.pop();
@@ -116,14 +124,15 @@ bool encodeBytes(const std::string& inputFileName) {
         nodes.push_back(std::move(parent));
     }
 
-    // Root of the completed Huffman tree
+    // `nodes` owns every node; these raw pointers are only queue/tree links.
     ByteNode* root = pq.empty() ? nullptr : pq.top();
 
-    // Generate Huffman codes
+    // Map each possible byte to its root-to-leaf bit string.
     std::array<std::string, 256> codes{};
     generateCodes(root, "", codes);
 
-    // Pack the bits into bytes
+    // Pack code bits most-significant-bit first. The final byte is padded on
+    // the right with zeroes; the original size tells the decoder when to stop.
     std::vector<unsigned char> compressedData;
     unsigned char currentByte = 0;
     int bitCount = 0;
@@ -148,16 +157,16 @@ bool encodeBytes(const std::string& inputFileName) {
         }
     }
 
-    // Handle remaining bits
+    // Flush a partial byte after left-aligning its remaining bits.
     if (bitCount > 0) {
         currentByte <<= (8 - bitCount);
         compressedData.push_back(currentByte);
     }
 
-    // Create output filename
+    // The container is deliberately adjacent to the source file.
     std::string outputFileName = inputFileName + ".huff";
 
-    // Write compressed file
+    // Store the tree recipe (frequencies) and the packed payload.
     bool success = writeHuffFile(outputFileName, frequencies, compressedData, static_cast<std::uint64_t>(data.size()));
 
     if (!success) {

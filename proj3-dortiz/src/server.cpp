@@ -19,6 +19,8 @@ namespace fs = std::filesystem;
 struct TempWorkspace {
     fs::path directory;
 
+    // Each request gets isolated filenames so concurrent uploads cannot
+    // overwrite one another or access a previous request's files.
     TempWorkspace() {
         static std::atomic<std::uint64_t> counter{0};
 
@@ -40,6 +42,7 @@ struct TempWorkspace {
         throw std::runtime_error("Cannot create temporary workspace");
     }
 
+    // Temporary input and output files are removed after the route finishes.
     ~TempWorkspace() {
         std::error_code ec;
         fs::remove_all(directory, ec);
@@ -76,7 +79,8 @@ bool readFile(const fs::path& path, std::string& data) {
 int main() {
     crow::SimpleApp app;
 
-    // ENCODE
+    // The browser sends the raw uploaded file body, not multipart form data.
+    // This keeps the transport aligned with the byte-based encoder.
     CROW_ROUTE(app, "/api/encode")
     .methods(crow::HTTPMethod::POST)
     ([](const crow::request& req) {
@@ -114,7 +118,7 @@ int main() {
         }
     });
 
-    // DECODE
+    // Decode accepts a .huff body and returns the restored bytes as a blob.
     CROW_ROUTE(app, "/api/decode")
     .methods(crow::HTTPMethod::POST)
     ([](const crow::request& req) {

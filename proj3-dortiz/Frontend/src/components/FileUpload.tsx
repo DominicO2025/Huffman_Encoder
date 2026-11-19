@@ -10,6 +10,8 @@ function FileUpload({ onFileSelect }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
+    // Extension validation prevents sending unrelated files to the binary
+    // Huffman endpoints. The server still performs the real format checks.
     const fileName = file.name.toLowerCase();
 
     if (
@@ -32,6 +34,7 @@ function FileUpload({ onFileSelect }: FileUploadProps) {
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
+    // Prevent the browser from opening the dropped file as a new page.
     event.preventDefault();
     setIsDragging(false);
 

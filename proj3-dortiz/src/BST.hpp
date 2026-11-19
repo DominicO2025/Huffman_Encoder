@@ -17,26 +17,25 @@ struct TreeNode {
     TreeNode(const std::string& token) : word(token), count(1), left(nullptr), right(nullptr) {}
 };
 
+/** Binary search tree used to count distinct normalized words. */
 class BinSearchTree {
   public:
     BinSearchTree() = default;
     ~BinSearchTree(); // calls destroy(root_)
 
-    // Insert 'word'; if present, increment its count.
+    /// Inserts a word, incrementing its count if it already exists.
     void insert(const std::string& word);
 
-    // Convenience: loop over insert(word) for each token.
+    /// Inserts every word in the supplied sequence.
     void bulkInsert(const std::vector<std::string>& words);
     
-    // [[nodiscard]] throws an error if this function gets called and the
-    // return value is unused
+    /// Returns whether the word exists in the tree.
     [[nodiscard]] bool member(std::string_view word) const;
     
-    // Return the count associated with a word, or a 0 if it's not in the tree
+    /// Returns a word's frequency, or zero when it is absent.
     [[nodiscard]] int countOf(std::string_view word) const;
     
-    // In-order traversal (word-lex order)
-    // Populates a list of (word, frequency) pairs
+    /// Appends `(word, frequency)` pairs in lexicographic order.
     void inorderCollect(std::vector<std::pair<std::string,int>>& out) const;
 
     [[nodiscard]] std::size_t size() const; // distinct words

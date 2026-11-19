@@ -27,6 +27,8 @@ bool customComparison(
 
 bool encodeFile(const std::string& inputPrefix) {
 
+    // This is the original assignment workflow: inputPrefix is not expected
+    // to include the .txt suffix.
     const std::string inputFileName = inputPrefix + ".txt";
     const std::string wordTokensFileName = inputPrefix + ".tokens";
 
@@ -41,6 +43,8 @@ bool encodeFile(const std::string& inputPrefix) {
         return false;
     }
 
+    // Scanner intentionally normalizes the text into words, so this path is
+    // educational rather than byte-preserving.
     std::vector<std::string> words;
 
     namespace fs = std::filesystem;
@@ -64,6 +68,8 @@ bool encodeFile(const std::string& inputPrefix) {
 
     std::vector<std::string> originalWords = words;
 
+    // The fixed seed makes the BST construction reproducible for coursework
+    // output while leaving the frequency counts unchanged.
     int seed = 123;
     auto rng = std::mt19937(seed);
     std::shuffle(words.begin(), words.end(), rng);

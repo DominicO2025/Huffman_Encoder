@@ -15,15 +15,16 @@ class Scanner {
 public:
     explicit Scanner(std::filesystem::path inputPath);
 
-    // Tokenize into memory (according to the Rules in this section).
+    /** Reads the input file and appends normalized word tokens to `words`. */
     error_type tokenize(std::vector<std::string>& words);
 
     ~Scanner() = default;
 
 private:
-    // Read the next token from 'in'. Returns empty string when no more tokens.
-    // Follows the project’s tokenization rules: letters a–z with optional internal apostrophes;
-    // digits, punctuation, hyphens/dashes, whitespace, and non‑ASCII are separators.
+    /**
+     * Reads one word, lowercases ASCII letters, and allows internal
+     * apostrophes. Separators and non-ASCII bytes are discarded.
+     */
     std::string readWord(std::istream& in);
     
 

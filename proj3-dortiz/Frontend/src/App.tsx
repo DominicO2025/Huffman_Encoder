@@ -11,6 +11,8 @@ type ProcessedFile = {
 };
 
 function App() {
+    // The fixed byte-frequency header is 2,061 bytes, so very small inputs
+    // may produce a larger .huff file even though the coding is lossless.
     const SMALL_FILE_LIMIT = 2 * 1024;
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -40,6 +42,8 @@ function App() {
     }
 
     function downloadFile(blob: Blob, fileName: string) {
+      // Object URLs let the browser download binary response data without
+      // converting it to text or sending it through another server request.
       const url = URL.createObjectURL(blob);
 
       const link = document.createElement("a");
@@ -64,6 +68,8 @@ function App() {
     setIsEncoding(true);
 
     try {
+      // Send the File body directly. The server expects raw bytes rather than
+      // a multipart form upload.
       const response = await fetch("/api/encode", {
         method: "POST",
         headers: {
@@ -103,6 +109,7 @@ function App() {
     setIsEncoding(true);
 
     try {
+      // Decode also returns binary data, so keep the response as a Blob.
       const response = await fetch("/api/decode", {
         method: "POST",
         headers: {

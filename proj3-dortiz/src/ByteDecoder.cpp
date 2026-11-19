@@ -11,6 +11,8 @@
 #include <limits>
 
 struct DecodeNode {
+    // This mirrors ByteNode in the encoder. The decoder rebuilds, rather than
+    // serializes, the tree from the frequency table in the file header.
     unsigned char byte;
     std::uint64_t frequency;
     std::uint16_t minByte;
@@ -23,6 +25,8 @@ struct DecodeNode {
 };
 
 struct CompareDecodeNodes {
+    // Must remain identical to the encoder comparator or equal-frequency
+    // inputs could produce incompatible code trees.
     bool operator()(
         const DecodeNode* a,
         const DecodeNode* b
@@ -42,7 +46,7 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         return false;
     }
 
-    // Read file signature
+    // Reject files that are not this project's container format.
     char magic[4];
 
     if (!input.read(magic, 4)) {
@@ -53,14 +57,15 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         return false;
     }
 
-    // Read format version
+    // Versioning leaves room for future incompatible container formats.
     int version = input.get();
 
     if (version != 1) {
         return false;
     }
 
-    // Helper to read 64-bit little-endian integers
+    // The file format fixes integer byte order so files are portable between
+    // machines with different native endianness.
     auto readUint64 = [&input](std::uint64_t& value) -> bool {
         value = 0;
 
@@ -79,14 +84,14 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         return true;
     };
 
-    // Read original file size
+    // The size is both metadata and the decoder's exact output limit.
     std::uint64_t originalSize = 0;
 
     if (!readUint64(originalSize)) {
         return false;
     }
 
-    // Read byte frequencies
+    // Frequencies let us reconstruct the same tree without storing codes.
     std::array<std::uint64_t, 256> frequencies{};
 
     for (auto& frequency : frequencies) {
@@ -95,7 +100,8 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         }
     }
 
-    // Validate the frequency table
+    // Do not trust the header: its counts must describe exactly originalSize
+    // output bytes and must not overflow that declared total.
     std::uint64_t totalFrequency = 0;
 
     for (std::uint64_t frequency : frequencies) {
@@ -110,7 +116,7 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         return false;
     }
 
-    // Create priority queue
+    // Rebuild the same deterministic min-priority queue used by the encoder.
     std::priority_queue<
         DecodeNode*,
         std::vector<DecodeNode*>,
@@ -119,7 +125,7 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
 
     std::vector<std::unique_ptr<DecodeNode>> nodes;
 
-    // Create leaf nodes
+    // Only bytes with nonzero frequencies belong in the tree.
     for (int i = 0; i < 256; i++) {
         if (frequencies[i] > 0) {
             auto node = std::make_unique<DecodeNode>(
@@ -132,7 +138,7 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         }
     }
 
-    // Combine the two smallest-frequency nodes
+    // Reconstruct parent nodes in the same left/right order as the encoder.
     while (pq.size() > 1) {
         DecodeNode* left = pq.top();
         pq.pop();
@@ -159,14 +165,14 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
 
     DecodeNode* root = pq.empty() ? nullptr : pq.top();
 
-    // Create the restored output file
+    // Binary output preserves the original byte values.
     std::ofstream output(outputFileName, std::ios::binary);
 
     if (!output) {
         return false;
     }
 
-    // Handle empty original files
+    // Empty input has no tree or payload, but is still a valid file.
     if (originalSize == 0) {
         output.close();
         return output.good();
@@ -176,7 +182,7 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         return false;
     }
 
-    // Handle files containing only one unique byte
+    // A one-leaf tree has no edges to consume. Repeat its byte directly.
     if (root->left == nullptr && root->right == nullptr) {
         for (std::uint64_t i = 0; i < originalSize; i++) {
             output.put(static_cast<char>(root->byte));
@@ -190,7 +196,8 @@ bool decodeBytes(const std::string& inputFileName, const std::string& outputFile
         return output.good();
     }
 
-    // Decode normal Huffman trees
+    // Walk payload bits from most significant to least significant. Padding
+    // is harmless because decoding stops at the declared original size.
     DecodeNode* current = root;
     std::uint64_t decodedCount = 0;
 
